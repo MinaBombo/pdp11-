@@ -2,11 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity D_flipflop is
-    generic(nBits : natural := 32);
+    generic(w : natural := 32);
     port(clk, enable, reset : in std_logic;
-        d : in std_logic_vector(nBits-1 downto 0);
+        d : in std_logic_vector(w-1 downto 0);
           
-        q : out std_logic_vector(nBits-1 downto 0)); 
+        q : out std_logic_vector(w-1 downto 0)); 
 end entity D_flipflop;
 
 architecture behaviour of D_flipflop is 
