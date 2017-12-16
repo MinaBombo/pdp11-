@@ -1,0 +1,9 @@
+INC R1
+INC R2
+MOV R1,22(R2)
+ADD R1,R2
+
+//Address Data (decimal)
+2 44
+4 17
+7 10
