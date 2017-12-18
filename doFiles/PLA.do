@@ -7,6 +7,7 @@ vcom -work work ./vhdl/components/PLA.vhd
 vsim PLA
 radix binary
 
+
 # Open View windows
 view structure
 view signals
