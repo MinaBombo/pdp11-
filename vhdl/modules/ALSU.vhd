@@ -9,8 +9,8 @@ entity ALSU is
 			sel : in std_logic_vector(4 downto 0);
 			Cin : in std_logic;
 			
-			F    : out  std_logic_vector (op_w-1 downto 0);
-			Cout : out std_logic);    
+			F    	   : out  std_logic_vector (op_w-1 downto 0);
+			Cout, Zout : out std_logic);    
 end entity ALSU;
 
 architecture dataflow of ALSU is
