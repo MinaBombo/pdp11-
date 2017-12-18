@@ -32,7 +32,7 @@ constant SP_IN    : std_logic_vector(2 downto 0) := "010";
 constant IR_IN    : std_logic_vector(2 downto 0) := "011";
 constant CYCLE_IN : std_logic_vector(2 downto 0) := "100";
 constant Y_IN     : std_logic_vector(2 downto 0) := "101";
-constant FLAG_IN  : std_logic_vector(2 downto 0) := "110";
+constant FLAG_IN  : std_logic_vector(2 downto 0) := "110"; --We never used it
 constant G1_NONE  : std_logic_vector(2 downto 0) := "111";
 
 -- Second Input Group Constant
@@ -46,7 +46,7 @@ constant ALU_INC   : std_logic_vector(1 downto 0) := "00";
 constant ALU_DEC   : std_logic_vector(1 downto 0) := "01";
 constant ALU_ADD   : std_logic_vector(1 downto 0) := "10";
 constant ALU_IR_OP : std_logic_vector(1 downto 0) := "11";
-constant ALU_NONE  : std_logic_vector(1 downto 0) := "11";
+constant ALU_NONE  : std_logic_vector(1 downto 0) := "00";
 
 type arr1 is array (h-1 downto 0) of std_logic;
 type arr2 is array (h-1 downto 0) of std_logic_vector(1 downto 0);
@@ -257,7 +257,7 @@ begin
     sig_branch(15)                   <= '0';        
     sig_alu_ctrl(15)                 <= ALU_NONE;     
     sig_reg_in_ctrl_second_group(15) <= G2_NONE;  
-    sig_reg_out_ctrl(15)             <= OUT_NONE;      
+    sig_reg_out_ctrl(15)             <= Z_OUT;      
     sig_reg_in_ctrl_first_group(15)  <= MAR_IN; 
     --
     sig_inc_cycle(16)                <= '0';   
@@ -430,7 +430,7 @@ begin
     --
 
     -- ADDR_EXEC
-    sig_inc_cycle(30)                <= '0';   
+    sig_inc_cycle(30)                <= '1';   
     sig_dirty_bit(30)                <= '0';    
     sig_read(30)                     <= '0';          
     sig_write(30)                    <= '0';         

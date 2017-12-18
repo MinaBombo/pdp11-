@@ -14,7 +14,7 @@ architecture arch of MicroPC is
 signal sig_cur : natural; 
 
 begin
-    process(clk, reset, load)
+    process(clk, reset, load,input_load)
     begin
         if (reset = '1') then
             sig_cur <= 0; 
