@@ -62,6 +62,16 @@ component Ram is
         data_out : out std_logic_vector(31 downto 0)); 
 end component;
 
+component ALSU is  
+		generic(op_w : natural := 16);
+		port(A, B :  in std_logic_vector (op_w-1 downto 0);
+			sel : in std_logic_vector(4 downto 0);
+			Cin : in std_logic;
+			
+			F			 : out  std_logic_vector (op_w-1 downto 0);
+			Cout, z_flag : out std_logic);    
+end component;
+
 signal sig_cu_r0_in, sig_cu_r1_in, sig_cu_r2_in, sig_cu_r3_in     :  std_logic;
 signal sig_cu_r0_out, sig_cu_r1_out, sig_cu_r2_out, sig_cu_r3_out :  std_logic;
 
@@ -91,6 +101,11 @@ signal mdr_input_data : std_logic_vector(31 downto 0);
 signal mdr_in_enable : std_logic;
 
 signal ram_out : std_logic_vector (31 downto 0);
+signal  z_input : std_logic_vector (31 downto 0);
+signal pc_out : std_logic_vector (15 downto 0);
+signal pc_out_to_bus : std_logic_vector (31 downto 0);
+signal sp_out : std_logic_vector (15 downto 0);
+signal sp_out_to_bus : std_logic_vector (31 downto 0);
 begin
     not_clk <= not i_clk;
     cu_instance : CU port map (not_clk, i_reset, flag_out, ir_out, sig_cu_r0_in, sig_cu_r1_in, sig_cu_r2_in, sig_cu_r3_in,
@@ -106,15 +121,26 @@ begin
     flag: NBitRegister generic map (2)  port map (i_clk, sig_cu_flag_in, '1',            sig_cu_reset, flag_in, flag_out );
     src : NBitRegister generic map (32) port map (i_clk, sig_cu_src_in,  sig_cu_src_out, sig_cu_reset, data_bus, data_bus);
     y   : NBitRegister generic map (32) port map (i_clk, sig_cu_y_in,    '1',            sig_cu_reset, data_bus, y_out   );
-    z   : NBitRegister generic map (32) port map (i_clk, sig_cu_z_in,    sig_cu_z_out,   sig_cu_reset, data_bus, data_bus);
+    z   : NBitRegister generic map (32) port map (i_clk, sig_cu_z_in,    sig_cu_z_out,   sig_cu_reset, z_input, data_bus);
     
     r0  : NBitRegister generic map (32) port map (i_clk, sig_cu_r0_in,   sig_cu_r0_out,  sig_cu_reset, data_bus, data_bus);
     r1  : NBitRegister generic map (32) port map (i_clk, sig_cu_r1_in,   sig_cu_r1_out,  sig_cu_reset, data_bus, data_bus);
     r2  : NBitRegister generic map (32) port map (i_clk, sig_cu_r2_in,   sig_cu_r2_out,  sig_cu_reset, data_bus, data_bus);
     r3  : NBitRegister generic map (32) port map (i_clk, sig_cu_r3_in,   sig_cu_r3_out,  sig_cu_reset, data_bus, data_bus);
+    
+    pc : D_flipflop generic map (16) port map  (i_clk,sig_cu_pc_in,sig_cu_reset,data_bus(15 downto 0),pc_out);
+    sp : D_flipflop generic map (16) port map  (i_clk,sig_cu_sp_in,sig_cu_reset,data_bus(15 downto 0),sp_out);
 
-    pc  : NBitRegister generic map (16) port map (i_clk, sig_cu_pc_in,   sig_cu_pc_out,  sig_cu_reset, data_bus(15 downto 0), data_bus(15 downto 0));
-    sp  : NBitRegister generic map (16) port map (i_clk, sig_cu_sp_in,   sig_cu_sp_out,  sig_cu_reset, data_bus(15 downto 0), data_bus(15 downto 0));
+
+    pc_out_to_bus(15 downto 0) <= pc_out;
+    pc_out_to_bus(31 downto 16) <= (others => '0');
+    pc_buffer : TriStateBuffer generic map(32) port map(pc_out_to_bus,sig_cu_pc_out,data_bus);
+
+    sp_out_to_bus(15 downto 0) <= sp_out;
+    sp_out_to_bus(31 downto 16) <= (others => '0');
+    sp_buffer : TriStateBuffer generic map(32) port map(sp_out_to_bus,sig_cu_sp_out,data_bus);
+
+
 
     --IR
     ir  : D_flipflop generic map (16) port map (i_clk, sig_cu_ir_in,  sig_cu_reset, data_bus(15 downto 0), ir_out);
@@ -130,9 +156,12 @@ begin
     mdr_tri_state_buffer : TriStateBuffer generic map(32) port map(mdr_out,sig_cu_mdr_out,data_bus);
     --RAM
 
-    ram_component : Ram port map (not_clk ,sig_cu_mem_read,mar_out,mdr_out,ram_out);
+    ram_component : Ram port map (not_clk ,sig_cu_mem_write,mar_out,mdr_out,ram_out);
 
     --MAR 
     mar : D_flipflop generic map (11) port map (i_clk,sig_cu_mar_in,sig_cu_reset,data_bus(10 downto 0),mar_out);
+
+    --ALU
+    alu : ALSU generic map(32) port map (data_bus,y_out,sig_cu_alu_op,flag_out(0),z_input,flag_in(0),flag_in(1));
 
 end system_arch ; -- 
