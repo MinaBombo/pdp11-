@@ -84,7 +84,8 @@ constant CMP_OPCODE : std_logic_vector(4 downto 0) := "01001";
 constant INC_OPCODE : std_logic_vector(4 downto 0) := "01010";
 constant DEC_OPCODE : std_logic_vector(4 downto 0) := "01011";
 constant ADD_OPCODE : std_logic_vector(4 downto 0) := "00001";
-
+constant INC_TWO_OPCODE : std_logic_vector(4 downto 0) := "10100";
+constant DEC_TWO_OPCODE : std_logic_vector(4 downto 0) := "10101";
 constant NO_OP_OPCODE      : std_logic_vector(4 downto 0) := "11100";
 constant JSR_OP_OPCODE     : std_logic_vector(4 downto 0) := "11110";
 constant RTS_OP_OPCODE     : std_logic_vector(4 downto 0) := "11111";
@@ -244,10 +245,13 @@ begin
     o_mem_read <= sig_read;
     o_mem_write <= sig_write;
 
-    o_alu_op <= i_ir(15 downto 11) when sig_alu_ctrl = ALU_IR_OP 
+    o_alu_op <= i_ir(15 downto 11) when sig_alu_ctrl = ALU_IR_OP
+    else INC_TWO_OPCODE when ((sig_alu_ctrl = ALU_INC) and (sig_reg_out_ctrl /= PC_OUT) and (sig_reg_out_ctrl /= SP_OUT))
+    else DEC_TWO_OPCODE when ((sig_alu_ctrl = ALU_DEC) and (sig_reg_out_ctrl /= PC_OUT) and (sig_reg_out_ctrl /= SP_OUT)) 
     else INC_OPCODE when sig_alu_ctrl = ALU_INC
     else DEC_OPCODE when sig_alu_ctrl = ALU_DEC
     else ADD_OPCODE when sig_alu_ctrl = ALU_ADD;
+
 
     --Cycle in decoder, produces either src in or y in
     sig_cycle_in_selection <= "0" when  sig_num_cycle_old = CYC_ZERO else "1";
@@ -259,7 +263,7 @@ begin
     o_mar_in <= '1' when sig_reg_in_ctrl_first_group = MAR_IN else '0';
     o_mdr_in <= '1' when sig_reg_in_ctrl_first_group = MDR_IN else '0';
     o_ir_in <= '1' when sig_reg_in_ctrl_first_group = IR_IN else '0';
-    o_flag_in <= '1' when (sig_alu_ctrl = ALU_IR_OP)  and (i_ir(15 downto 11) /= CMP_OPCODE) else '0';
+    o_flag_in <= '1' when (sig_alu_ctrl = ALU_IR_OP) else '0';
 
     --RCycle in decoder
     sig_Rcycle_in_decoder_enable <= '1' when sig_reg_in_ctrl_second_group = Rc_IN else '0';

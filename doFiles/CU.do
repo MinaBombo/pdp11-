@@ -48,3 +48,17 @@ run
 run
 run
 run
+#cmp R1 , R2
+force -freeze sim:/cu/i_ir 16'h4844 0
+run
+run
+run
+run
+force -freeze sim:/cu/i_ir 16'h0E54 0
+run
+run
+run
+run
+run
+run
+run
