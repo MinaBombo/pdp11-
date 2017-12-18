@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity PLA is
-    port(mov, dirty_bit : in std_logic;
+    port(mov, dirty_bit,cmp : in std_logic;
         n_ops, spec_op, addr_mode, cycle : in std_logic_vector(1 downto 0);
         
         addr : out natural);
@@ -72,6 +72,9 @@ begin
     else ADDR_EXEC
     when ( (cycle = CYC_ONE and n_ops = SINGLE_OP) or (cycle = CYC_TWO and n_ops = DOUBLE_OP) )
 
+    else ADDR_PANIC
+    when (cycle = CYC_THREE and n_ops = DOUBLE_OP and cmp = '1') 
+    
     else ADDR_SAVE_REG
     when ( addr_mode = REG_DIR and 
     ((cycle = CYC_TWO and n_ops = SINGLE_OP) or (cycle = CYC_THREE and n_ops = DOUBLE_OP)) )
