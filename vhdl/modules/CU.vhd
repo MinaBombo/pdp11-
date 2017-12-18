@@ -17,7 +17,8 @@ entity CU is
 
         o_mem_read, o_mem_write : out std_logic;
 
-        o_alu_op : out std_logic_vector(4 downto 0));
+        o_alu_op : out std_logic_vector(4 downto 0);
+        o_reset : out std_logic);
 end entity CU;
 
 architecture arch of CU is
@@ -79,6 +80,7 @@ END component ;
 
 
 constant HLT_OPCODE : std_logic_vector(4 downto 0) := "11011";
+constant RESET_OPCODE : std_logic_vector(4 downto 0) := "11101";
 constant MOV_OPCODE : std_logic_vector(4 downto 0) := "00000";
 constant CMP_OPCODE : std_logic_vector(4 downto 0) := "01001";
 constant INC_OPCODE : std_logic_vector(4 downto 0) := "01010";
@@ -86,6 +88,7 @@ constant DEC_OPCODE : std_logic_vector(4 downto 0) := "01011";
 constant ADD_OPCODE : std_logic_vector(4 downto 0) := "00001";
 constant INC_TWO_OPCODE : std_logic_vector(4 downto 0) := "10100";
 constant DEC_TWO_OPCODE : std_logic_vector(4 downto 0) := "10101";
+
 constant NO_OP_OPCODE      : std_logic_vector(4 downto 0) := "11100";
 constant JSR_OP_OPCODE     : std_logic_vector(4 downto 0) := "11110";
 constant RTS_OP_OPCODE     : std_logic_vector(4 downto 0) := "11111";
@@ -158,7 +161,7 @@ signal sig_reg_out_ctrl, sig_reg_in_ctrl_first_group                          : 
 
 signal sig_dirty_bit_latched    : std_logic;
 signal sig_end_latched, sig_end_from_rom, sig_end : std_logic_vector(0 downto 0); -- Sorry not sorry
-signal sig_branch_end :std_logic;
+signal sig_branch_end, sig_branch_end_old :std_logic_vector (0 downto 0);
 signal sig_num_cycle_new,sig_num_cycle_old : std_logic_vector(1 downto 0);
 
 signal sig_main_reg_out_ctrl : std_logic_vector (7 downto 0);
@@ -173,14 +176,18 @@ signal sig_cycle_in_decoder_output : std_logic_vector (1 downto 0);
 
 signal sig_Rcycle_in_decoder_enable :  std_logic;
 signal sig_Rcycle_in_decoder_output : std_logic_vector (7 downto 0);
-
+signal reset_all,sig_reset_from_ir : std_logic;
 signal reset_from_end_latched : std_logic;
 begin
 
+    reset_all <= i_reset or sig_reset_from_ir;
     sig_not_clk <= not i_clk;
 
     sig_not_hlt <= '0' when ( i_ir(15 downto 11) = HLT_OPCODE)
     else           '1';
+
+    sig_reset_from_ir <= '1' when ( i_ir(15 downto 11) = RESET_OPCODE) else '0';
+
 
     sig_cmp <= '1' when (i_ir(15 downto 11) = CMP_OPCODE)
     else '0';
@@ -198,7 +205,7 @@ begin
     else           "11" ;
 
     -- Check hard or soft reset (!!! sig_reset_mircopc not initialized)
-    sig_reset_mircopc <= i_reset or sig_end(0);
+    sig_reset_mircopc <= reset_all or sig_end(0);
 
     micro_pc : MicroPC port map(sig_not_clk, sig_not_hlt, sig_reset_mircopc, sig_branch, sig_pla_out,
                                 sig_micropc_out);
@@ -208,16 +215,16 @@ begin
                         sig_alu_ctrl, sig_reg_in_ctrl_second_group,
                         sig_reg_out_ctrl, sig_reg_in_ctrl_first_group);
     
-    sig_end(0) <= sig_end_from_rom(0) or sig_branch_end;
+    sig_end(0) <= sig_end_from_rom(0) or sig_branch_end(0);
 
-    end_latch : D_flipflop generic map(1) port map(sig_not_clk, '1', i_reset, sig_end , sig_end_latched); 
-    reset_from_end_latched <= sig_end_latched(0) or i_reset;
+    end_latch : D_flipflop generic map(1) port map(sig_not_clk, '1', reset_all, sig_end , sig_end_latched); 
+    reset_from_end_latched <= sig_end_latched(0) or reset_all;
 
 
     dirty_latch :  T_flipflop port map(sig_not_clk, reset_from_end_latched, sig_dirty_bit, sig_dirty_bit_latched);
     
     cycle_counter : Counter generic map(2) port map (sig_not_clk,sig_inc_cycle,reset_from_end_latched,sig_num_cycle_new);
-    cycle_latch : D_flipflop generic map(2) port map (i_clk,'1',i_reset,sig_num_cycle_new,sig_num_cycle_old);
+    cycle_latch : D_flipflop generic map(2) port map (i_clk,'1',reset_all,sig_num_cycle_new,sig_num_cycle_old);
 
     sig_curr_addressing_mode <= i_ir(10 downto 9) when sig_num_cycle_new = CYC_ZERO else i_ir(5 downto 4);
 
@@ -279,17 +286,20 @@ begin
     o_pc_in <= '1' when (sig_Rcycle_in_decoder_output(5) = '1') or (sig_reg_in_ctrl_second_group = PC_IN) else '0';
     o_z_in  <= '1' when sig_reg_in_ctrl_second_group = Z_IN else '0';
 
-
+    o_reset <= reset_all;
 
     --Branch Circuitry
-    sig_branch_end <= '0' when 
+    sig_branch_end(0) <= '0' when 
     (i_ir(15 downto 11) = UNCONDITIONAL_BRANCH_OPCODE) or (i_ir(15 downto 11) = EQUAL_BRANCH_OPCODE and i_flag(1) = '1' ) or
     (i_ir(15 downto 11) = NOTEQUAL_BRANCH_OPCODE and i_flag(1) = '0' ) or (i_ir(15 downto 11) = LOWER_BRANCH_OPCODE and i_flag(0) = '0' ) or
     (i_ir(15 downto 11) = LOWERORSAME_BRANCH_OPCODE and ((i_flag(0) = '0') or(i_flag(1) = '1')) ) or
     (i_ir(15 downto 11) = HIGHER_BRANCH_OPCODE and i_flag(0) = '1' ) or
     (i_ir(15 downto 11) = HIGHERORSAME_BRANCH_OPCODE and ((i_flag(0) = '1') or(i_flag(1) = '1')) ) or
     (i_ir(15 downto 11) > HIGHERORSAME_BRANCH_OPCODE or i_ir(15 downto 11) < UNCONDITIONAL_BRANCH_OPCODE)
+    or (sig_branch_end_old(0) = '1')
     else '1';
+
+    branch_end_latch : D_flipflop generic map(1) port map (i_clk,'1',reset_all,sig_branch_end,sig_branch_end_old);
 
 
 end arch;

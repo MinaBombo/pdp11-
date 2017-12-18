@@ -13,6 +13,7 @@ force -freeze sim:/cu/i_reset 0 0
 run
 run
 run
+run
 #Mov R1,R2
 force -freeze sim:/cu/i_ir 16'h0044 0
 run
@@ -54,11 +55,28 @@ run
 run
 run
 run
+#Add x(R1), R2+
 force -freeze sim:/cu/i_ir 16'h0E54 0
 run
 run
 run
 run
 run
+run
+run
+run
+#BRA
+force -freeze sim:/cu/i_ir 16'hA000 0
+run
+run
+#BRE --> false branch
+force -freeze sim:/cu/i_ir 16'hA800 0
+run
+run
+#HLT
+force -freeze sim:/cu/i_ir 16'hD800 0
+run
+run
+force -freeze sim:/cu/i_ir 16'hE800 0
 run
 run
