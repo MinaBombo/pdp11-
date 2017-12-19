@@ -27,7 +27,7 @@ component CU is
         o_mem_read, o_mem_write : out std_logic;
 
         o_alu_op : out std_logic_vector(4 downto 0);
-        o_reset : out std_logic);
+        o_reset,o_reset_ir : out std_logic);
 end component;
 
 component NBitRegister is
@@ -114,6 +114,7 @@ signal pc_out : std_logic_vector (15 downto 0);
 signal pc_out_to_bus : std_logic_vector (31 downto 0);
 signal sp_out : std_logic_vector (15 downto 0);
 signal sp_out_to_bus : std_logic_vector (31 downto 0);
+signal sig_cu_ir_reset : std_logic;
 begin
     not_clk <= not i_clk;
     cu_instance : CU port map (not_clk, i_reset, flag_out, ir_out, sig_cu_r0_in, sig_cu_r1_in, sig_cu_r2_in, sig_cu_r3_in,
@@ -124,7 +125,7 @@ begin
                                sig_cu_src_out, sig_cu_z_out,
                                sig_cu_mem_read, sig_cu_mem_write,
                                sig_cu_alu_op,
-                               sig_cu_reset);
+                               sig_cu_reset,sig_cu_ir_reset);
     
     flag: NBitRegister generic map (2)  port map (i_clk, sig_cu_flag_in, '1',            sig_cu_reset, flag_in, flag_out );
     src : NBitRegister generic map (32) port map (i_clk, sig_cu_src_in,  sig_cu_src_out, sig_cu_reset, data_bus, data_bus);
@@ -151,7 +152,7 @@ begin
 
 
     --IR
-    ir  : D_flipflop generic map (16) port map (i_clk, sig_cu_ir_in,  sig_cu_reset, data_bus(15 downto 0), ir_out);
+    ir  : D_flipflop generic map (16) port map (i_clk, sig_cu_ir_in,  sig_cu_ir_reset, data_bus(15 downto 0), ir_out);
 
     ir_out_to_bus(15 downto 0) <= ir_out;
     ir_out_to_bus(31 downto 16) <= (others => '0');
