@@ -19,12 +19,12 @@ begin
     begin
         if(rising_edge(clk)) then
             if(w_en = '1') then
-                ram_memory(to_integer(unsigned(addr))) <= data_in (31 downto 16);
-                ram_memory(to_integer(unsigned(addr)+1)) <= data_in (15 downto 0); 
+                ram_memory(to_integer(unsigned(addr)+1)) <= data_in (31 downto 16);
+                ram_memory(to_integer(unsigned(addr))) <= data_in (15 downto 0); 
             end if;
         end if;
     end process;
 
-    data_out <= ram_memory(to_integer(unsigned(addr))) & ram_memory(to_integer(unsigned(addr)+1));
+    data_out <= ram_memory(to_integer(unsigned(addr)+1)) & ram_memory(to_integer(unsigned(addr)));
 
 end behaviour;

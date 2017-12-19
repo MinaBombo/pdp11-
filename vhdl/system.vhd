@@ -72,6 +72,14 @@ component ALSU is
 			Cout, z_flag : out std_logic);    
 end component;
 
+component mdr is
+    generic(w : natural := 32);
+    port(clk, bus_enable,ram_enable, reset : in std_logic;
+        bus_input,ram_input : in std_logic_vector(w-1 downto 0);
+          
+        q : out std_logic_vector(w-1 downto 0)); 
+end component;
+
 signal sig_cu_r0_in, sig_cu_r1_in, sig_cu_r2_in, sig_cu_r3_in     :  std_logic;
 signal sig_cu_r0_out, sig_cu_r1_out, sig_cu_r2_out, sig_cu_r3_out :  std_logic;
 
@@ -150,9 +158,9 @@ begin
     ir_tri_state_buffer : TriStateBuffer generic map(32) port map(ir_out_to_bus,sig_cu_ir_out,data_bus);
     --
     --mdr
-    mdr_in_enable <= sig_cu_mem_read or sig_cu_mdr_in;
-    mdr_input_data <= ram_out when sig_cu_mem_read = '1' else data_bus;
-    mdr : D_flipflop generic map (32) port map (i_clk, mdr_in_enable,  sig_cu_reset, mdr_input_data, mdr_out);
+    --mdr_in_enable <= sig_cu_mem_read or sig_cu_mdr_in;
+    --mdr_input_data <= ram_out when sig_cu_mem_read = '1' else data_bus;
+    mdr_component : mdr generic map (32) port map (i_clk, sig_cu_mdr_in,sig_cu_mem_read,  sig_cu_reset, data_bus,ram_out, mdr_out);
     mdr_tri_state_buffer : TriStateBuffer generic map(32) port map(mdr_out,sig_cu_mdr_out,data_bus);
     --RAM
 
