@@ -5,4 +5,6 @@ then
     echo "Usage " $0 ": filename"
 fi
 
-file= `pwd`"/asm/"$1".txt"
+code_file=`pwd`"/asm/"$1".txt"
+mem_file=`pwd`"/memory/"$1".mem"
+do_file=$(mktemp /tmp/$1.do)
