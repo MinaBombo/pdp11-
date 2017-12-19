@@ -7,10 +7,10 @@ fi
 
 code_file=`pwd`"/asm/"$1".txt"
 mem_dir=`pwd`"/memory/"
-do_file=$(mktemp /tmp/$1.do)
+do_file=`pwd`"/doFiles/run.do"
 
 javac Assembler.java
-java  Assembler $code_file $mem_dir
+java  main $code_file $mem_dir
 
 echo "# Create library
 vlib work
@@ -40,4 +40,6 @@ mem load -i "$mem_file".mem /system/ram_component/ram_memory
 
 # Run
 run 10000" >> $do_file
+
+vrdf $do_file
 
