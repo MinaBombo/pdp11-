@@ -27,9 +27,9 @@ constant BRANCH  : std_logic_vector(1 downto 0) := "11";
 
 -- addr_mode enumuration
 constant REG_DIR  : std_logic_vector(1 downto 0) := "00";
-constant AUTO_INC    : std_logic_vector(1 downto 0) := "01";
-constant AUTO_DEC    : std_logic_vector(1 downto 0) := "10";
-constant INDEXED     : std_logic_vector(1 downto 0) := "11";
+constant AUTO_INC : std_logic_vector(1 downto 0) := "01";
+constant AUTO_DEC : std_logic_vector(1 downto 0) := "10";
+constant INDEXED  : std_logic_vector(1 downto 0) := "11";
 
 -- cycle enumuration
 constant CYC_ZERO  : std_logic_vector(1 downto 0) := "00";
