@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]
+then
+    echo "Usage " $0 ": filename"
+fi
+
+code_file=`pwd`"/asm/"$1".txt"
+mem_dir=`pwd`"/memory/"
+do_file=$(mktemp /tmp/$1.do)
+
+javac Assembler.java
+java  Assembler $code_file $mem_dir
+
+echo "# Create library
+vlib work
+
+
+# Compile and load
+vcom vhdl/packages/*.vhd  
+vcom vhdl/components/*.vhd 
+vcom vhdl/modules/*.vhd 
+vhdl/system.vhd
+vsim work.system
+
+
+# Open View windows
+view structure
+view signals
+view wave
+
+
+# Changing wave view to hexdec
+property wave -radix hexadecimal /system/*
+
+
+# Initialize ram memory
+mem load -i "$mem_file".mem /system/ram_component/ram_memory
+
+
+# Run
+run 10000" >> $do_file
+

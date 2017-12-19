@@ -7,11 +7,12 @@ DEC R2
 BHI LABEL
 ADD R0,R2
 MOV (R2)+,R3
+HLT
 SUB1: XOR R0,R3
 AND R0,R3
 RTS
 
 //Address Data (decimal)
 33 44
-34 17
-35 10
+35 17
+37 10
