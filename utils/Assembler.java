@@ -17,7 +17,7 @@ public class Assembler {
     private static final char    ADDR_RADIX            = 'd';
     private static final char    DATA_RADIX            = 'b';
     private static final double  VERSION               = 1.0;
-    private static final Integer WORDS_PER_LINE        = 10;
+    private static final Integer WORDS_PER_LINE        = 1;
     private static final String  MEMORY_FILE_EXTENSION = ".mem";
 
     private static final String ADDR_MODE_DIR_REG  = "00";
@@ -41,6 +41,14 @@ public class Assembler {
                     + "version=" + String.valueOf(VERSION) + ' '
                     + "wordsperline=" + String.valueOf(WORDS_PER_LINE)
                     + "\n";
+
+    private static final Integer RAM_H = 2048;
+    private static final Integer RAM_W = 16;
+    private static String[] mRam = new String[RAM_H];
+    private static Integer[] mX = { -1, -1};
+    private static Integer mCurrAddress = 0;
+    private static boolean mIsDataNext = false;
+    private static HashMap<String, Integer> mLabelsToAddr = new HashMap<String, Integer>();
 
     private class CompilationErrorException extends RuntimeException{
         public CompilationErrorException(String message) {
@@ -68,13 +76,54 @@ public class Assembler {
             writer.write(MEMORY_FILE_HEADER);
 
             String line;
-            int lineIndex = 0;
-            HashMap<String, Integer> labelsToAddr = new HashMap<String, Integer>();
+            for(int i=0; i<RAM_H; ++i)
+                mRam[i] = String.format("%0" + RAM_W + "d", 0);
             while ((line = reader.readLine()) != null) {
-                String parsedLine = parseLine(line, lineIndex++, labelsToAddr);
+                String parsedLine = parseLine(line);
                 if(parsedLine != null) {
                     System.out.println(line + " : " + parsedLine);
-                    writer.write(+'\n');
+                    mRam[mCurrAddress++] = parsedLine;
+                    for(int i=0; i<2; ++i){
+                        if(mX[i] != -1){
+                            mRam[mCurrAddress++] = Integer.
+                                    toBinaryString(((int) Math.pow(2, 16)) | mX[i])
+                                    .substring(1);
+                            System.out.println("X" + String.valueOf(i) + " : " + mRam[mCurrAddress-1]);
+                            mX[i] = -1;
+                        }
+                    }
+                }else{
+                    if(mIsDataNext && line.length() > 0 && line.charAt(0) == '/'){
+                        while ((line = reader.readLine()) != null){
+                            String[] parts = line.split(" ");
+                            mRam[Integer.parseInt(parts[0])] = Integer.
+                                    toBinaryString(((int) Math.pow(2, 16)) | Integer.parseInt(parts[1]))
+                                    .substring(1);
+                        }
+                    }
+                }
+            }
+
+            for (int i = RAM_H-1; i>=0; --i){
+                if(mRam[i].contains(".")){
+                    int size = ((int) Math.pow(2, 11));
+                    int addr = mLabelsToAddr.get(mRam[i].substring(7));
+                    if(mRam[i].charAt(mRam[i].indexOf('.') +1 ) == 'J')
+                        writer.write(String.format("%4d", i)
+                                + ": " + mRam[i].substring(0, 5)
+                                + Integer.toBinaryString(size | addr).substring(1)
+                                +"\n");
+                    else {
+                        writer.write(String.format("%4d", i)
+                                + ": " + mRam[i].substring(0, 5)
+                                + Integer.toBinaryString(size | (addr -(i + 1))).substring(21)
+                                + "\n");
+                        System.out.println(Integer.toBinaryString(size | (addr -(i + 1)) ).substring(1));
+                    }
+
+                } else{
+                    writer.write(String.format("%4d", i)
+                                + ": " + mRam[i]+"\n");
                 }
             }
         }
@@ -97,7 +146,7 @@ public class Assembler {
         }
     }
 
-    private String parseOperand(String operand) throws CompilationErrorException{
+    private String parseOperand(String operand, int index) throws CompilationErrorException{
         String parsedOp = "";
         String xRange = "([0-9]" +
                         "|[1-9][0-9]" +
@@ -116,7 +165,8 @@ public class Assembler {
             parsedOp += ADDR_MODE_AUTO_DEC;
         else if(operand.matches(xRange + "\\((?i)(r[0-3])\\)")) {
             parsedOp += ADDR_MODE_INDEXED;
-            int x = new Scanner("Str87uyuy232").useDelimiter("\\D+").nextInt();
+            int x = new Scanner(operand).useDelimiter("\\D+").nextInt();
+            mX[index] = x;
             operand = operand.substring(String.valueOf(x).length());
         }
         else
@@ -131,9 +181,8 @@ public class Assembler {
         return  parsedOp;
     }
 
-    private String parseInstruction(String instr, String[] operands, HashMap<String, Integer> labelsToAddr){
+    private String parseInstruction(String instr, String[] operands){
         int size5  = ((int) Math.pow(2, 5));
-        int size11 = ((int) Math.pow(2, 11));
 
         // No operands
         if(instr.matches("\\b(?i)(hlt|nop|reset|rts)\\b"))
@@ -143,47 +192,52 @@ public class Assembler {
         // Branches and JSR
         else if(instr.matches("\\b(?i)(b((l[o|s])|(h[i|s])|eq|nq|r)|jsr)\\b"))
             return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + Integer.toBinaryString(size11 | labelsToAddr.get(operands[0])).substring(1);
+                    + '.' + instr.charAt(0) + operands[0];
 
         // Single operands
         else if(instr.matches("\\b(?i)(bic|in[c|v]|ro[r|l]|ls[r|l]|dec|r[r|l]c|asr)\\b"))
             return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + parseOperand(operands[0])
-                    + parseOperand(operands[0])
+                    + parseOperand(operands[0], 0)
+                    + parseOperand(operands[0], 0)
                     + '0';
 
         // Double operands
         else if(instr.matches("\\b(?i)(mov|ad[d|c]|sub|sbc|and|x?or|cmp)\\b"))
             return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + parseOperand(operands[0])
-                    + parseOperand(operands[1])
+                    + parseOperand(operands[0], 0)
+                    + parseOperand(operands[1], 1)
                     + '0';
 
         // BIS = OR
         else if(instr.matches("\\b(?i)bis\\b"))
             return Integer.toBinaryString(size5 | Operations.indexOf("OR")).substring(1)
-                    + parseOperand(operands[0])
-                    + parseOperand(operands[1])
+                    + parseOperand(operands[0], 0)
+                    + parseOperand(operands[1], 1)
                     + '0';
 
         // CLR = DST XOR DST
         else if(instr.matches("\\b(?i)clr\\b"))
             return Integer.toBinaryString(size5 | Operations.indexOf("XOR")).substring(1)
-                    + parseOperand(operands[0])
-                    + parseOperand(operands[0])
+                    + parseOperand(operands[0], 0)
+                    + parseOperand(operands[0], 0)
                     + '0';
 
         else
             throw new CompilationErrorException("Illegal Instruction: " + instr);
     }
 
-    private String parseLine(String line, int lineIndex, HashMap<String, Integer> labelsToAddr){
-        if(line.charAt(0) == '/' || line.charAt(0) == '\n')
+    private String parseLine(String line){
+        if(line.length() == 0)
             return null;
+
+        if(line.charAt(0) == '/' ){
+            mIsDataNext = true;
+            return null;
+        }
 
         String parts[] = line.split(":");
         if(parts.length > 1) {
-            labelsToAddr.put(parts[0], lineIndex);
+            mLabelsToAddr.put(parts[0], mCurrAddress);
             line = line.substring(parts[0].length() +2);
         }
 
@@ -194,7 +248,7 @@ public class Assembler {
             line = line.substring(1);
         String operands[] = line.split(",");
 
-        return parseInstruction(parts[0], operands, labelsToAddr);
+        return parseInstruction(parts[0], operands);
     }
 }
 
@@ -209,3 +263,4 @@ class main {
         new Assembler().CompileFile(args[0], args[1]);
     }
 }
+
