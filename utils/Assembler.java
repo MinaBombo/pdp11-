@@ -96,9 +96,16 @@ public class Assembler {
                     if(mIsDataNext && line.length() > 0 && line.charAt(0) == '/'){
                         while ((line = reader.readLine()) != null){
                             String[] parts = line.split(" ");
-                            mRam[Integer.parseInt(parts[0])] = Integer.
-                                    toBinaryString(((int) Math.pow(2, 16)) | Integer.parseInt(parts[1]))
-                                    .substring(1);
+                            String data1 = Integer.
+                            toBinaryString(((int) Math.pow(2, 16)) | Integer.parseUnsignedInt(parts[1]) /(int)Math.pow(2, 16))
+                            .substring(1);
+                            String data2 = Integer.
+                            toBinaryString(((int) Math.pow(2, 16)) | Integer.parseUnsignedInt(parts[1]) %(int)Math.pow(2, 16))
+                            .substring(1);
+                            mRam[Integer.parseInt(parts[0])]    = data2;
+                            mRam[Integer.parseInt(parts[0]) +1] = data1; 
+                            System.out.println(parts[1]
+                            +  " : " + data1 + "," + data2 );
                         }
                     }
                 }
@@ -113,14 +120,19 @@ public class Assembler {
                                 + ": " + mRam[i].substring(0, 5)
                                 + Integer.toBinaryString(size | addr).substring(1)
                                 +"\n");
-                    else {
-                        writer.write(String.format("%4d", i)
-                                + ": " + mRam[i].substring(0, 5)
-                                + Integer.toBinaryString(size | (addr -(i + 1))).substring(21)
-                                + "\n");
-                        System.out.println(Integer.toBinaryString(size | (addr -(i + 1)) ).substring(1));
-                    }
+                    else{ 
+                        String offset = Integer.toBinaryString(size | (addr -(i + 1)));
+                        if(offset.length() == 32) 
+                            offset = offset.substring(21);
+                        else
+                            offset = offset.substring(1);
 
+                        String toWrite = String.format("%4d", i)
+                        + ": " + mRam[i].substring(0, 5)
+                        + offset
+                        + "\n";
+                        writer.write(toWrite);
+                    }
                 } else{
                     writer.write(String.format("%4d", i)
                                 + ": " + mRam[i]+"\n");

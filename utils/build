@@ -5,9 +5,10 @@ then
     echo "Usage " $0 ": filename"
 fi
 
-code_file=`pwd`"/asm/"$1".txt"
-mem_dir=`pwd`"/memory/"
-do_file=`pwd`"/doFiles/run.do"
+code_file=.."/asm/"$1".txt"
+mem_dir=.."/memory/"
+do_file=.."/doFiles/run.do"
+rm $do_file
 
 javac Assembler.java
 java  main $code_file $mem_dir
@@ -17,10 +18,10 @@ vlib work
 
 
 # Compile and load
-vcom vhdl/packages/*.vhd  
-vcom vhdl/components/*.vhd 
-vcom vhdl/modules/*.vhd 
-vhdl/system.vhd
+vcom ../vhdl/packages/*.vhd  
+vcom ../vhdl/components/*.vhd 
+vcom ../vhdl/modules/*.vhd 
+vcom ../vhdl/system.vhd
 vsim work.system
 
 
@@ -31,15 +32,26 @@ view wave
 
 
 # Changing wave view to hexdec
-property wave -radix hexadecimal /system/*
+add wave -radix unsigned /system/pc/*
+add wave -radix unsigned /system/mar/*
+add wave -radix unsigned /system/mdr_component/*
+add wave -radix unsigned /system/r0/*
+add wave -radix unsigned /system/r1/*
+add wave -radix unsigned /system/r2/*
+add wave -radix unsigned /system/r3/*
+add wave -radix unsigned /system/*
 
 
 # Initialize ram memory
-mem load -i "$mem_file".mem /system/ram_component/ram_memory
+mem load -i ../memory/"$1".mem /system/ram_component/ram_memory
 
 
 # Run
-run 10000" >> $do_file
+force -freeze /system/i_clk 1 0, 0 {50 ps} -r 100
+force -freeze /system/i_reset 1 0
+run 50
+force -freeze /system/i_reset 0 0
+run 30000" >> $do_file
 
 vrdf $do_file
 

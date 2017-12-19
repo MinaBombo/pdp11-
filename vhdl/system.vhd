@@ -154,8 +154,8 @@ begin
     --IR
     ir  : D_flipflop generic map (16) port map (i_clk, sig_cu_ir_in,  sig_cu_ir_reset, data_bus(15 downto 0), ir_out);
 
-    ir_out_to_bus(15 downto 0) <= ir_out;
-    ir_out_to_bus(31 downto 16) <= (others => '0');
+    ir_out_to_bus(10 downto 0) <= ir_out(10 downto 0);
+    ir_out_to_bus(31 downto 11) <= (others => '0');
     ir_tri_state_buffer : TriStateBuffer generic map(32) port map(ir_out_to_bus,sig_cu_ir_out,data_bus);
     --
     --mdr
